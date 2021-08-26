@@ -687,6 +687,48 @@ trait GapicClientTrait
 
     /**
      * @param string $methodName
+     * @param array $optionalArgs {
+     *     Call Options
+     *
+     *     @type array $headers [optional] key-value array containing headers
+     *     @type int $timeoutMillis [optional] the timeout in milliseconds for the call
+     *     @type array $transportOptions [optional] transport-specific call options
+     * }
+     * @param Message $request
+     * @param OperationsClient $client
+     * @param string $interfaceName
+     *
+     * @return PromiseInterface
+     */
+    private function startOperationsDiregapicCall(
+        $methodName,
+        array $optionalArgs,
+        Message $request,
+        OperationsClient $client,
+        $interfaceName = null
+    ) {
+        $callStack = $this->createCallStack(
+            $this->configureCallConstructionOptions($methodName, $optionalArgs)
+        );
+        $descriptor = $this->descriptors[$methodName]['longRunning'];
+        $callStack = new OperationsMiddleware($callStack, $client, $descriptor);
+
+        $call = new Call(
+            $this->buildMethod($interfaceName, $methodName),
+            Operation::class,
+            $request,
+            [],
+            Call::UNARY_CALL
+        );
+
+        $this->modifyUnaryCallable($callStack);
+        return $callStack($call, $optionalArgs + array_filter([
+            'audience' => self::getDefaultAudience()
+        ]));
+    }
+
+    /**
+     * @param string $methodName
      * @param array $optionalArgs
      * @param string $decodeType
      * @param Message $request

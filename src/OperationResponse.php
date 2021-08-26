@@ -32,6 +32,8 @@
 
 namespace Google\ApiCore;
 
+use Google\ApiCore\LongRunning\ClientWrapper\ClientWrapperInterface;
+use Google\ApiCore\LongRunning\ClientWrapper\OnePlatform;
 use Google\ApiCore\LongRunning\OperationsClient;
 use Google\LongRunning\Operation;
 use Google\Protobuf\Any;
@@ -62,7 +64,7 @@ class OperationResponse
     const DEFAULT_MAX_POLLING_DURATION = 0;
 
     private $operationName;
-    private $operationsClient;
+    private $operationsClientWrapper;
 
     private $operationReturnType;
     private $metadataReturnType;
@@ -91,12 +93,12 @@ class OperationResponse
      *     @type int $maxPollDelayMillis The maximum polling interval to use, in milliseconds.
      *     @type int $totalPollTimeoutMillis The maximum amount of time to continue polling.
      *     @type Operation $lastProtoResponse A response already received from the server.
+     *     @type ClientWrapperInterface $wrapper a wrapper for the operations client.
      * }
      */
     public function __construct($operationName, $operationsClient, $options = [])
     {
         $this->operationName = $operationName;
-        $this->operationsClient = $operationsClient;
         if (isset($options['operationReturnType'])) {
             $this->operationReturnType = $options['operationReturnType'];
         }
@@ -118,6 +120,10 @@ class OperationResponse
         if (isset($options['lastProtoResponse'])) {
             $this->lastProtoResponse = $options['lastProtoResponse'];
         }
+        $this->setOperationsClientWrapper(isset($options['wrapper'])
+            ? $options['wrapper']
+            : new OnePlatform($operationsClient)
+        );
     }
 
     /**
@@ -127,9 +133,7 @@ class OperationResponse
      */
     public function isDone()
     {
-        return (is_null($this->lastProtoResponse) || is_null($this->lastProtoResponse->getDone()))
-            ? false
-            : $this->lastProtoResponse->getDone();
+        return $this->operationsClientWrapper->isDone($this->lastProtoResponse);
     }
 
     /**
@@ -209,7 +213,7 @@ class OperationResponse
             throw new ValidationException("Cannot call reload() on a deleted operation");
         }
         $name = $this->getName();
-        $this->lastProtoResponse = $this->operationsClient->getOperation($name);
+        $this->lastProtoResponse = $this->operationsClientWrapper->getOperation($name);
     }
 
     /**
@@ -241,9 +245,9 @@ class OperationResponse
      * @return Status|null The status of the operation in case of failure, or null if
      *                                 operationFailed() is false.
      */
-    public function getError()
+    public function getError(Message $lastProtoResponse = null)
     {
-        if (!$this->isDone() || is_null($this->lastProtoResponse->getError())) {
+        if (!$this->isDone()) {
             return null;
         }
         return $this->lastProtoResponse->getError();
@@ -279,7 +283,7 @@ class OperationResponse
      */
     public function getOperationsClient()
     {
-        return $this->operationsClient;
+        return $this->operationsClientWrapper->getOperationsClient();
     }
 
     /**
@@ -297,7 +301,7 @@ class OperationResponse
      */
     public function cancel()
     {
-        $this->operationsClient->cancelOperation($this->getName());
+        $this->operationsClientWrapper->cancelOperation($this->getName());
     }
 
     /**
@@ -310,7 +314,7 @@ class OperationResponse
      */
     public function delete()
     {
-        $this->operationsClient->deleteOperation($this->getName());
+        $this->operationsClientWrapper->deleteOperation($this->getName());
         $this->deleted = true;
     }
 
@@ -339,5 +343,10 @@ class OperationResponse
         $metadata = new $metadataReturnType();
         $metadata->mergeFromString($any->getValue());
         return $metadata;
+    }
+
+    private function setOperationsClientWrapper(ClientWrapperInterface $operationsClientWrapper)
+    {
+        $this->operationsClientWrapper = $operationsClientWrapper;
     }
 }
