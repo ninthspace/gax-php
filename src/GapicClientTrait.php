@@ -33,6 +33,7 @@
 namespace Google\ApiCore;
 
 use Google\ApiCore\LongRunning\OperationsClient;
+use Google\ApiCore\LongRunning\ClientWrapper\AdditionalArgsClientWrapper;
 use Google\ApiCore\Middleware\CredentialsWrapperMiddleware;
 use Google\ApiCore\Middleware\FixedHeaderMiddleware;
 use Google\ApiCore\Middleware\OperationsMiddleware;
@@ -506,8 +507,15 @@ trait GapicClientTrait
             'descriptorsConfigPath',
         ], $options);
 
-        return $this->pluck('operationsClient', $options, false)
-            ?: new OperationsClient($options);
+        // User-supplied operations client
+        if ($operationsClient = $this->pluck('operationsClient', $options, false)) {
+            return $operationsClient;
+        }
+
+        // operationsClientClass option
+        $operationsClientClass = $this->pluck('operationsClientClass', $options, false)
+            ?: OperationsCLient::class;
+        return new $operationsClientClass($options);
     }
 
     /**
@@ -662,18 +670,31 @@ trait GapicClientTrait
         $methodName,
         array $optionalArgs,
         Message $request,
-        OperationsClient $client,
-        $interfaceName = null
+        $client,
+        $interfaceName = null,
+        $operationsClass = null
     ) {
         $callStack = $this->createCallStack(
             $this->configureCallConstructionOptions($methodName, $optionalArgs)
         );
+
         $descriptor = $this->descriptors[$methodName]['longRunning'];
+
+        if (isset($descriptor['additionalArgsMethods'])) {
+            $additionalArgs = [];
+            foreach ($descriptor['additionalArgsMethods'] as $additionalArgsMethodName) {
+                $additionalArgs[] = $request->$additionalArgsMethodName();
+            }
+            $descriptor['additionalArgs'] = $additionalArgs;
+            unset($descriptor['additionalArgsMethods']);
+            $descriptor['operationsClientWrapper'] = new AdditionalArgsClientWrapper($client);
+        }
+
         $callStack = new OperationsMiddleware($callStack, $client, $descriptor);
 
         $call = new Call(
             $this->buildMethod($interfaceName, $methodName),
-            Operation::class,
+            $operationsClass ?: Operation::class,
             $request,
             [],
             Call::UNARY_CALL

@@ -52,7 +52,7 @@ class OperationsMiddleware
 
     public function __construct(
         callable $nextHandler,
-        OperationsClient $client,
+        $client,
         array $descriptor
     ) {
         $this->nextHandler = $nextHandler;
@@ -66,7 +66,7 @@ class OperationsMiddleware
         return $next(
             $call,
             $options
-        )->then(function (Operation $response) {
+        )->then(function ($response) {
             $options = $this->descriptor + [
                 'lastProtoResponse' => $response
             ];

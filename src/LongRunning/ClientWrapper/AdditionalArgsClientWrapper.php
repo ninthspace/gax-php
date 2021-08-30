@@ -33,10 +33,6 @@
 namespace Google\ApiCore\LongRunning\ClientWrapper;
 
 use Google\ApiCore\ApiException;
-use Google\Cloud\Compute\V1\GlobalOperationsClient;
-use Google\Cloud\Compute\V1\GlobalOrganizationOperationsGapicClient;
-use Google\Cloud\Compute\V1\RegionOperationsClient;
-use Google\Cloud\Compute\V1\ZoneOperationsClient;
 use Google\Cloud\Compute\V1\Operation\Status;
 use Google\Protobuf\Internal\Message;
 use UnexpectedValueException;
@@ -47,58 +43,17 @@ use LogicException;
  *
  * @internal
  */
-class Compute implements ClientWrapperInterface
+class AdditionalArgsClientWrapper implements ClientWrapperInterface
 {
-    const TYPE_GLOBAL = GlobalOperationsClient::class;
-    const TYPE_GLOBAL_ORGANIZATION = GlobalOrganizationOperationsClient::class;
-    const TYPE_REGION = RegionOperationsClient::class;
-    const TYPE_ZONE = ZoneOperationsClient::class;
-
     private $operationsClient;
-    private $operationsClientType;
-
-    private $zone;
-    private $project;
-    private $region;
 
     /**
      * OperationResponse constructor.
      *
      * @param mixed $operationsClient
      */
-    public function __construct($operationsClient, array $options)
+    public function __construct($operationsClient)
     {
-        if ($operationsClient instanceof GlobalOperationsClient) {
-            if (!isset($options['project'])) {
-                throw new UnexpectedValueException(
-                    'GlobalOperationsClient requires project option'
-                );
-            }
-            $this->project = $options['project'];
-            $this->operationsClientType = self::TYPE_GLOBAL;
-        } elseif ($operationsClient instanceof GlobalOrganizationOperationsGapicClient) {
-            $this->operationsClientType = self::TYPE_GLOBAL_ORGANIZATION;
-        } elseif ($operationsClient instanceof RegionOperationsClient) {
-            if (!isset($options['project']) || !isset($options['region'])) {
-                throw new UnexpectedValueException(
-                    'RegionOperationsClient requires project and region option'
-                );
-            }
-            $this->project = $options['project'];
-            $this->region = $options['region'];
-            $this->operationsClientType = self::TYPE_REGION;
-        } elseif ($operationsClient instanceof ZoneOperationsClient) {
-            if (!isset($options['project']) || !isset($options['zone'])) {
-                throw new UnexpectedValueException(
-                    'ZoneOperationsClient requires project and zone option'
-                );
-            }
-            $this->project = $options['project'];
-            $this->zone = $options['zone'];
-            $this->operationsClientType = self::TYPE_ZONE;
-        } else {
-            throw new UnexpectedValueException('Operation client not supported');
-        }
         $this->operationsClient = $operationsClient;
     }
 
@@ -111,7 +66,7 @@ class Compute implements ClientWrapperInterface
     {
         return (is_null($lastProtoResponse) || is_null($lastProtoResponse->getStatus()))
             ? false
-            : $lastProtoResponse->geStatus() === Status::DONE;
+            : $lastProtoResponse->getStatus() === Status::DONE;
     }
 
     /**
@@ -132,22 +87,10 @@ class Compute implements ClientWrapperInterface
      *
      * @throws ApiException If the API call fails.
      */
-    public function getOperation($name)
+    public function getOperation($name, array $additionalArgs)
     {
-        switch ($this->operationsClientType) {
-            case self::TYPE_GLOBAL:
-                return $this->globalOperationsClient->get($name, $this->project);
-
-            case self::TYPE_GLOBAL_ORGANIZATION:
-                return $this->globalOrganizationOperationsClient->get($name);
-
-            case self::TYPE_REGION:
-                return $this->regionOperationsClient->get($name, $this->project, $this->region);
-
-            case self::TYPE_ZONE:
-                return $this->zoneOperationsClient->get($name, $this->project, $this->zone);
-        }
-        throw new LogicException('Invalid operations client');
+        $args = array_merge([$name], $additionalArgs);
+        return call_user_func_array([$this->operationsClient, 'get'], $args);
     }
 
     /**
@@ -165,7 +108,7 @@ class Compute implements ClientWrapperInterface
      *
      * @throws ApiException If the API call fails.
      */
-    public function cancel($name)
+    public function cancelOperation($name, array $additionalArgs)
     {
         throw new LogicException('cancelling operations is not supported by this API');
     }
@@ -180,21 +123,9 @@ class Compute implements ClientWrapperInterface
      *
      * @throws ApiException If the API call fails.
      */
-    public function delete($name)
+    public function deleteOperation($name, array $additionalArgs)
     {
-        switch ($this->operationsClientType) {
-            case self::TYPE_GLOBAL:
-                return $this->globalOperationsClient->delete($name, $this->project);
-
-            case self::TYPE_GLOBAL_ORGANIZATION:
-                return $this->globalOrganizationOperationsClient->delete($name);
-
-            case self::TYPE_REGION:
-                return $this->regionOperationsClient->delete($name, $this->project, $this->region);
-
-            case self::TYPE_ZONE:
-                return $this->zoneOperationsClient->delete($name, $this->project, $this->zone);
-        }
-        throw new LogicException('Invalid operations client');
+        $args = array_merge([$name], $additionalArgs);
+        return call_user_func_array([$this->operationsClient, 'delete'], $args);
     }
 }
