@@ -32,9 +32,7 @@
 
 namespace Google\ApiCore;
 
-use Google\ApiCore\LongRunning\ClientWrapper\ClientWrapperInterface;
-use Google\ApiCore\LongRunning\ClientWrapper\DefaultClientWrapper;
-use Google\ApiCore\LongRunning\OperationsClient;
+use Google\ApiCore\LongRunning\OperationsClientInterface;
 use Google\LongRunning\Operation;
 use Google\Protobuf\Any;
 use Google\Protobuf\Internal\Message;
@@ -52,7 +50,7 @@ use Google\Rpc\Status;
  * Operations API, which is used by the OperationResponse object. If
  * more control is required, it is possible to make calls against the
  * Operations API directly instead of via the OperationResponse object
- * using an OperationsClient instance.
+ * using an OperationsClientInterface instance.
  */
 class OperationResponse
 {
@@ -64,7 +62,7 @@ class OperationResponse
     const DEFAULT_MAX_POLLING_DURATION = 0;
 
     private $operationName;
-    private $operationsClientWrapper;
+    private $operationsClient;
 
     private $operationReturnType;
     private $metadataReturnType;
@@ -78,11 +76,18 @@ class OperationResponse
     private $lastProtoResponse;
     private $deleted = false;
 
+    private $additionalArgs = [];
+    private $callOptions = [
+        'get' => 'getOperation',
+        'cancel' => 'cancelOperation',
+        'delete' => 'deleteOperation',
+    ];
+
     /**
      * OperationResponse constructor.
      *
      * @param string $operationName
-     * @param OperationsClient $operationsClient
+     * @param OperationsClientInterface $operationsClient
      * @param array $options {
      *                       Optional. Options for configuring the Operation response object.
      *
@@ -93,12 +98,14 @@ class OperationResponse
      *     @type int $maxPollDelayMillis The maximum polling interval to use, in milliseconds.
      *     @type int $totalPollTimeoutMillis The maximum amount of time to continue polling.
      *     @type Operation $lastProtoResponse A response already received from the server.
-     *     @type ClientWrapperInterface $wrapper a wrapper for the operations client.
+     *     @type array $callOptions instructions on how to call the OperationsClient
+     *     @type array $additionalArgs args to pass to the OperationsClient calls
      * }
      */
-    public function __construct($operationName, $operationsClient, $options = [])
+    public function __construct($operationName, OperationsClientInterface $operationsClient, $options = [])
     {
         $this->operationName = $operationName;
+        $this->operationsClient = $operationsClient;
         if (isset($options['operationReturnType'])) {
             $this->operationReturnType = $options['operationReturnType'];
         }
@@ -120,9 +127,12 @@ class OperationResponse
         if (isset($options['lastProtoResponse'])) {
             $this->lastProtoResponse = $options['lastProtoResponse'];
         }
-        $this->setOperationsClientWrapper(isset($options['operationsClientWrapperClass'])
-            ? $options['operationsClientWrapperClass']
-            : new DefaultClientWrapper($operationsClient));
+        if (isset($options['callOptions'])) {
+            $this->callOptions = $options['callOptions'];
+        }
+        if (isset($options['additionalArgs'])) {
+            $this->additionalArgs = $options['additionalArgs'];
+        }
     }
 
     /**
@@ -132,7 +142,7 @@ class OperationResponse
      */
     public function isDone()
     {
-        return $this->operationsClientWrapper->isDone($this->lastProtoResponse);
+        return $this->operationsClient->isDone($this->lastProtoResponse);
     }
 
     /**
@@ -212,7 +222,7 @@ class OperationResponse
             throw new ValidationException("Cannot call reload() on a deleted operation");
         }
         $name = $this->getName();
-        $this->lastProtoResponse = $this->operationsClientWrapper->getOperation($name);
+        $this->lastProtoResponse = $this->operationsCall('get', $this->getName(), $this->additionalArgs);
     }
 
     /**
@@ -277,12 +287,12 @@ class OperationResponse
     }
 
     /**
-     * @return OperationsClient The OperationsClient object used to make
+     * @return OperationsClientInterface The OperationsClient object used to make
      * requests to the operations API.
      */
     public function getOperationsClient()
     {
-        return $this->operationsClientWrapper->getOperationsClient();
+        return $this->operationsClient;
     }
 
     /**
@@ -300,7 +310,7 @@ class OperationResponse
      */
     public function cancel()
     {
-        $this->operationsClientWrapper->cancelOperation($this->getName());
+        $this->operationsCall('cancel', $this->getName(), $this->additionalArgs);
     }
 
     /**
@@ -313,7 +323,7 @@ class OperationResponse
      */
     public function delete()
     {
-        $this->operationsClientWrapper->deleteOperation($this->getName());
+        $this->operationsCall('delete', $this->getName(), $this->additionalArgs);
         $this->deleted = true;
     }
 
@@ -344,8 +354,13 @@ class OperationResponse
         return $metadata;
     }
 
-    private function setOperationsClientWrapper(ClientWrapperInterface $operationsClientWrapper)
+    private function operationsCall($callType, $name, array $additionalArgs)
     {
-        $this->operationsClientWrapper = $operationsClientWrapper;
+        if (!isset($this->callOptions[$callType])) {
+            throw new LogicException("The $callType operation is not supported by this API");
+        }
+        $method = $this->callOptions[$callType];
+        $args = array_merge([$name], $additionalArgs);
+        return call_user_func_array([$this->operationsClient, $method], $args);
     }
 }
