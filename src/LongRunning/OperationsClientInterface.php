@@ -30,9 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Google\ApiCore\LongRunning\ClientWrapper;
+namespace Google\ApiCore\LongRunning;
 
-use Google\ApiCore\ApiException;
 use Google\Protobuf\Internal\Message;
 
 /**
@@ -51,50 +50,12 @@ use Google\Protobuf\Internal\Message;
  *
  * @internal
  */
-interface ClientWrapperInterface
+interface OperationsClientInterface
 {
     /**
-     * @return OperationsClient The OperationsClient object used to make
-     * requests to the operations API.
+     * Check whether the operation has completed.
+     *
+     * @return bool
      */
-    public function getOperationsClient();
-
-    /**
-     * Get the operation.
-     *
-     * @param string $name
-     *
-     * @return Message
-     *
-     * @throws ApiException If the API call fails.
-     */
-    public function getOperation($name);
-
-    /**
-     * Starts asynchronous cancellation on a long-running operation. The server
-     * makes a best effort to cancel the operation, but success is not
-     * guaranteed. If the server doesn't support this method, it will throw an
-     * ApiException with code \Google\Rpc\Code::UNIMPLEMENTED. Clients can continue
-     * to use reload and pollUntilComplete methods to check whether the cancellation
-     * succeeded or whether the operation completed despite cancellation.
-     * On successful cancellation, the operation is not deleted; instead, it becomes
-     * an operation with a getError() value with a \Google\Rpc\Status code of 1,
-     * corresponding to \Google\Rpc\Code::CANCELLED.
-     *
-     * @param string $name
-     *
-     * @throws ApiException If the API call fails.
-     */
-    public function cancel($name);
-    /**
-     * Delete the long-running operation. This method indicates that the client is
-     * no longer interested in the operation result. It does not cancel the operation.
-     * If the server doesn't support this method, it will throw an ApiException with
-     * code \Google\Rpc\Code::UNIMPLEMENTED.
-     *
-     * @param string $name
-     *
-     * @throws ApiException If the API call fails.
-     */
-    public function delete($name);
+    public function isDone(Message $protoResponse);
 }
