@@ -33,7 +33,6 @@
 namespace Google\ApiCore;
 
 use Google\ApiCore\LongRunning\OperationsClient;
-use Google\ApiCore\LongRunning\ClientWrapper\AdditionalArgsClientWrapper;
 use Google\ApiCore\Middleware\CredentialsWrapperMiddleware;
 use Google\ApiCore\Middleware\FixedHeaderMiddleware;
 use Google\ApiCore\Middleware\OperationsMiddleware;
@@ -687,7 +686,6 @@ trait GapicClientTrait
             }
             $descriptor['additionalArgs'] = $additionalArgs;
             unset($descriptor['additionalArgsMethods']);
-            $descriptor['operationsClientWrapper'] = new AdditionalArgsClientWrapper($client);
         }
 
         $callStack = new OperationsMiddleware($callStack, $client, $descriptor);
