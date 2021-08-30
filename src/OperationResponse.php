@@ -33,7 +33,7 @@
 namespace Google\ApiCore;
 
 use Google\ApiCore\LongRunning\ClientWrapper\ClientWrapperInterface;
-use Google\ApiCore\LongRunning\ClientWrapper\OnePlatform;
+use Google\ApiCore\LongRunning\ClientWrapper\DefaultClientWrapper;
 use Google\ApiCore\LongRunning\OperationsClient;
 use Google\LongRunning\Operation;
 use Google\Protobuf\Any;
@@ -120,10 +120,9 @@ class OperationResponse
         if (isset($options['lastProtoResponse'])) {
             $this->lastProtoResponse = $options['lastProtoResponse'];
         }
-        $this->setOperationsClientWrapper(isset($options['wrapper'])
-            ? $options['wrapper']
-            : new OnePlatform($operationsClient)
-        );
+        $this->setOperationsClientWrapper(isset($options['operationsClientWrapperClass'])
+            ? $options['operationsClientWrapperClass']
+            : new DefaultClientWrapper($operationsClient));
     }
 
     /**

@@ -50,7 +50,7 @@ use Google\Rpc\Status;
  *
  * @internal
  */
-class OnePlatform implements ClientWrapperInterface
+class DefaultClientWrapper implements ClientWrapperInterface
 {
     private $operationsClient;
 
