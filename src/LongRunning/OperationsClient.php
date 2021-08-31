@@ -45,26 +45,12 @@
 namespace Google\ApiCore\LongRunning;
 
 use Google\ApiCore\LongRunning\Gapic\OperationsGapicClient;
-use Google\Protobuf\Internal\Message;
 
 /**
  * {@inheritdoc}
  */
-class OperationsClient extends OperationsGapicClient implements OperationsClientInterface
+class OperationsClient extends OperationsGapicClient
 {
     // This class is intentionally empty, and is intended to hold manual
     // additions to the generated {@see OperationsGapicClient} class.
-
-    /**
-     * Check whether the operation has completed.
-     *
-     * @return bool
-     */
-    public function isDone(Message $lastProtoResponse = null)
-    {
-        return (is_null($lastProtoResponse) || is_null($lastProtoResponse->getDone()))
-            ? false
-            : $lastProtoResponse->getDone();
-    }
-
 }
