@@ -32,7 +32,6 @@
 
 namespace Google\ApiCore;
 
-use Google\ApiCore\LongRunning\OperationsClientInterface;
 use Google\LongRunning\Operation;
 use Google\Protobuf\Any;
 use Google\Protobuf\Internal\Message;
@@ -51,7 +50,7 @@ use LogicException;
  * Operations API, which is used by the OperationResponse object. If
  * more control is required, it is possible to make calls against the
  * Operations API directly instead of via the OperationResponse object
- * using an OperationsClientInterface instance.
+ * using an Operations Client instance.
  */
 class OperationResponse
 {
@@ -88,7 +87,7 @@ class OperationResponse
      * OperationResponse constructor.
      *
      * @param string $operationName
-     * @param OperationsClientInterface $operationsClient
+     * @param $operationsClient
      * @param array $options {
      *                       Optional. Options for configuring the Operation response object.
      *
@@ -103,7 +102,7 @@ class OperationResponse
      *     @type array $additionalArgs args to pass to the OperationsClient calls
      * }
      */
-    public function __construct($operationName, OperationsClientInterface $operationsClient, $options = [])
+    public function __construct($operationName, $operationsClient, $options = [])
     {
         $this->operationName = $operationName;
         $this->operationsClient = $operationsClient;
@@ -312,7 +311,7 @@ class OperationResponse
     }
 
     /**
-     * @return OperationsClientInterface The OperationsClient object used to make
+     * @return The OperationsClient object used to make
      * requests to the operations API.
      */
     public function getOperationsClient()
