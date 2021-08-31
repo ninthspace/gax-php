@@ -77,11 +77,9 @@ class OperationResponse
     private $deleted = false;
 
     private $additionalArgs = [];
-    private $callOptions = [
-        'get' => 'getOperation',
-        'cancel' => 'cancelOperation',
-        'delete' => 'deleteOperation',
-    ];
+    private $getOperationMethod = 'getOperation';
+    private $cancelOperationMethod = 'cancelOperation';
+    private $deleteOperationMethod = 'deleteOperation';
 
     /**
      * OperationResponse constructor.
@@ -127,11 +125,17 @@ class OperationResponse
         if (isset($options['lastProtoResponse'])) {
             $this->lastProtoResponse = $options['lastProtoResponse'];
         }
-        if (isset($options['callOptions'])) {
-            $this->callOptions = $options['callOptions'];
+        if (array_key_exists('getOperationMethod', $options)) {
+            $this->getOperationMethod = $options['getOperationMethod'];
         }
-        if (isset($options['additionalArgs'])) {
-            $this->additionalArgs = $options['additionalArgs'];
+        if (array_key_exists('cancelOperationMethod', $options)) {
+            $this->cancelOperationMethod = $options['cancelOperationMethod'];
+        }
+        if (array_key_exists('deleteOperationMethod', $options)) {
+            $this->deleteOperationMethod = $options['deleteOperationMethod'];
+        }
+        if (isset($options['additionalOperationArguments'])) {
+            $this->additionalArgs = $options['additionalOperationArguments'];
         }
     }
 
@@ -221,8 +225,11 @@ class OperationResponse
         if ($this->deleted) {
             throw new ValidationException("Cannot call reload() on a deleted operation");
         }
-        $name = $this->getName();
-        $this->lastProtoResponse = $this->operationsCall('get', $this->getName(), $this->additionalArgs);
+        $this->lastProtoResponse = $this->operationsCall(
+            $this->getOperationMethod,
+            $this->getName(),
+            $this->additionalArgs
+        );
     }
 
     /**
@@ -310,7 +317,7 @@ class OperationResponse
      */
     public function cancel()
     {
-        $this->operationsCall('cancel', $this->getName(), $this->additionalArgs);
+        $this->operationsCall($this->cancelOperationMethod, $this->getName(), $this->additionalArgs);
     }
 
     /**
@@ -323,7 +330,7 @@ class OperationResponse
      */
     public function delete()
     {
-        $this->operationsCall('delete', $this->getName(), $this->additionalArgs);
+        $this->operationsCall($this->deleteOperationMethod, $this->getName(), $this->additionalArgs);
         $this->deleted = true;
     }
 
@@ -354,12 +361,8 @@ class OperationResponse
         return $metadata;
     }
 
-    private function operationsCall($callType, $name, array $additionalArgs)
+    private function operationsCall($method, $name, array $additionalArgs)
     {
-        if (!isset($this->callOptions[$callType])) {
-            throw new LogicException("The $callType operation is not supported by this API");
-        }
-        $method = $this->callOptions[$callType];
         $args = array_merge([$name], $additionalArgs);
         return call_user_func_array([$this->operationsClient, $method], $args);
     }
