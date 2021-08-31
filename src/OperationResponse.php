@@ -37,6 +37,7 @@ use Google\LongRunning\Operation;
 use Google\Protobuf\Any;
 use Google\Protobuf\Internal\Message;
 use Google\Rpc\Status;
+use LogicException;
 
 /**
  * Response object from a long running API method.
@@ -80,6 +81,8 @@ class OperationResponse
     private $getOperationMethod = 'getOperation';
     private $cancelOperationMethod = 'cancelOperation';
     private $deleteOperationMethod = 'deleteOperation';
+    private $operationStatusMethod = 'getDone';
+    private $operationStatusValue = true;
 
     /**
      * OperationResponse constructor.
@@ -137,6 +140,12 @@ class OperationResponse
         if (isset($options['additionalOperationArguments'])) {
             $this->additionalArgs = $options['additionalOperationArguments'];
         }
+        if (isset($options['operationStatusMethod'])) {
+            $this->operationStatusMethod = $options['operationStatusMethod'];
+        }
+        if (isset($options['operationStatusValue'])) {
+            $this->operationStatusValue = $options['operationStatusValue'];
+        }
     }
 
     /**
@@ -146,7 +155,16 @@ class OperationResponse
      */
     public function isDone()
     {
-        return $this->operationsClient->isDone($this->lastProtoResponse);
+        if (is_null($this->lastProtoResponse)) {
+            return false;
+        }
+
+        $status = call_user_func([$this->lastProtoResponse, $this->operationStatusMethod]);
+        if (is_null($status)) {
+            return false;
+        }
+
+        return $status === $this->operationStatusValue;
     }
 
     /**
@@ -363,6 +381,9 @@ class OperationResponse
 
     private function operationsCall($method, $name, array $additionalArgs)
     {
+        if (is_null($method)) {
+            throw new LogicException('cancelling operations is not supported by this API');
+        }
         $args = array_merge([$name], $additionalArgs);
         return call_user_func_array([$this->operationsClient, $method], $args);
     }
