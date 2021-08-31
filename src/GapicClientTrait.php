@@ -679,13 +679,13 @@ trait GapicClientTrait
 
         $descriptor = $this->descriptors[$methodName]['longRunning'];
 
-        if (isset($descriptor['additionalArgsMethods'])) {
+        if (isset($descriptor['additionalArgumentMethods'])) {
             $additionalArgs = [];
-            foreach ($descriptor['additionalArgsMethods'] as $additionalArgsMethodName) {
+            foreach ($descriptor['additionalArgumentMethods'] as $additionalArgsMethodName) {
                 $additionalArgs[] = $request->$additionalArgsMethodName();
             }
-            $descriptor['additionalArgs'] = $additionalArgs;
-            unset($descriptor['additionalArgsMethods']);
+            $descriptor['additionalOperationArguments'] = $additionalArgs;
+            unset($descriptor['additionalArgumentMethods']);
         }
 
         $callStack = new OperationsMiddleware($callStack, $client, $descriptor);
