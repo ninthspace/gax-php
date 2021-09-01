@@ -33,6 +33,7 @@ namespace Google\ApiCore\Middleware;
 
 use Google\ApiCore\Call;
 use Google\ApiCore\OperationResponse;
+use Google\Protobuf\Internal\Message;
 
 /**
  * Middleware which wraps the response in an OperationResponse object.
@@ -64,7 +65,7 @@ class OperationsMiddleware
         return $next(
             $call,
             $options
-        )->then(function ($response) {
+        )->then(function (Message $response) {
             $options = $this->descriptor + [
                 'lastProtoResponse' => $response
             ];
