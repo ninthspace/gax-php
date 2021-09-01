@@ -32,9 +32,7 @@
 namespace Google\ApiCore\Middleware;
 
 use Google\ApiCore\Call;
-use Google\ApiCore\LongRunning\OperationsClient;
 use Google\ApiCore\OperationResponse;
-use Google\LongRunning\Operation;
 
 /**
  * Middleware which wraps the response in an OperationResponse object.
@@ -44,7 +42,7 @@ class OperationsMiddleware
     /** @var callable */
     private $nextHandler;
 
-    /** @var OperationsClient */
+    /** @var object */
     private $client;
 
     /** @var array */
