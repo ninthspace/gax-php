@@ -81,7 +81,7 @@ class OperationResponse
     private $cancelOperationMethod = 'cancelOperation';
     private $deleteOperationMethod = 'deleteOperation';
     private $operationStatusMethod = 'getDone';
-    private $operationStatusValue = true;
+    private $operationStatusDoneValue = true;
 
     /**
      * OperationResponse constructor.
@@ -142,8 +142,8 @@ class OperationResponse
         if (isset($options['operationStatusMethod'])) {
             $this->operationStatusMethod = $options['operationStatusMethod'];
         }
-        if (isset($options['operationStatusValue'])) {
-            $this->operationStatusValue = $options['operationStatusValue'];
+        if (isset($options['operationStatusDoneValue'])) {
+            $this->operationStatusDoneValue = $options['operationStatusDoneValue'];
         }
     }
 
@@ -163,7 +163,7 @@ class OperationResponse
             return false;
         }
 
-        return $status === $this->operationStatusValue;
+        return $status === $this->operationStatusDoneValue;
     }
 
     /**
