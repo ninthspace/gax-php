@@ -671,7 +671,7 @@ trait GapicClientTrait
         Message $request,
         $client,
         $interfaceName = null,
-        $operationsClass = null
+        $operationClass = null
     ) {
         $callStack = $this->createCallStack(
             $this->configureCallConstructionOptions($methodName, $optionalArgs)
@@ -692,7 +692,7 @@ trait GapicClientTrait
 
         $call = new Call(
             $this->buildMethod($interfaceName, $methodName),
-            $operationsClass ?: Operation::class,
+            $operationClass ?: Operation::class,
             $request,
             [],
             Call::UNARY_CALL
