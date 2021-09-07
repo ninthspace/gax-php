@@ -679,6 +679,8 @@ trait GapicClientTrait
 
         $descriptor = $this->descriptors[$methodName]['longRunning'];
 
+        // Call the methods supplied in "additionalArgumentMethods" on the request Message object
+        // to build the "additionalOperationArguments" option for the operation response.
         if (isset($descriptor['additionalArgumentMethods'])) {
             $additionalArgs = [];
             foreach ($descriptor['additionalArgumentMethods'] as $additionalArgsMethodName) {
