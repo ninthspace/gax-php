@@ -44,18 +44,18 @@ class OperationsMiddleware
     private $nextHandler;
 
     /** @var object */
-    private $client;
+    private $operationsClient;
 
     /** @var array */
     private $descriptor;
 
     public function __construct(
         callable $nextHandler,
-        $client,
+        $operationsClient,
         array $descriptor
     ) {
         $this->nextHandler = $nextHandler;
-        $this->client = $client;
+        $this->$operationsClient = $operationsClient;
         $this->descriptor = $descriptor;
     }
 
@@ -69,7 +69,7 @@ class OperationsMiddleware
             $options = $this->descriptor + [
                 'lastProtoResponse' => $response
             ];
-            return new OperationResponse($response->getName(), $this->client, $options);
+            return new OperationResponse($response->getName(), $this->$operationsClient, $options);
         });
     }
 }
