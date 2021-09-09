@@ -381,7 +381,7 @@ class OperationResponse
     private function operationsCall($method, $name, array $additionalArgs)
     {
         if (is_null($method)) {
-            throw new LogicException('cancelling operations is not supported by this API');
+            throw new LogicException(sprintf('The %s operation is not supported by this API', $method));
         }
         $args = array_merge([$name], $additionalArgs);
         return call_user_func_array([$this->operationsClient, $method], $args);
