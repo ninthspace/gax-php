@@ -55,7 +55,7 @@ class OperationsMiddleware
         array $descriptor
     ) {
         $this->nextHandler = $nextHandler;
-        $this->$operationsClient = $operationsClient;
+        $this->operationsClient = $operationsClient;
         $this->descriptor = $descriptor;
     }
 
@@ -69,7 +69,10 @@ class OperationsMiddleware
             $options = $this->descriptor + [
                 'lastProtoResponse' => $response
             ];
-            return new OperationResponse($response->getName(), $this->$operationsClient, $options);
+            $operationNameMethod = isset($options['operationNameMethod'])
+                ? $options['operationNameMethod'] : 'getName';
+            $operationName = call_user_func([$response, $operationNameMethod]);
+            return new OperationResponse($operationName, $this->operationsClient, $options);
         });
     }
 }
