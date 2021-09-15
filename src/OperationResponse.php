@@ -174,6 +174,9 @@ class OperationResponse
      */
     public function operationSucceeded()
     {
+        if (!$this->hasResult()) {
+            return $this->isDone() && is_null($this->getError());
+        }
         return !is_null($this->getResult());
     }
 
@@ -256,13 +259,7 @@ class OperationResponse
      */
     public function getResult()
     {
-        if (!method_exists($this->lastProtoResponse, 'getResponse')) {
-            // The call to getResult is only for OnePlatform LROs, and is not
-            // supported by other LRO GAPIC clients (e.g. Compute)
-            return null;
-        }
-
-        if (!$this->isDone() || is_null($this->lastProtoResponse->getResponse())) {
+        if (!$this->hasResult() || !$this->isDone() || is_null($this->lastProtoResponse->getResponse())) {
             return null;
         }
 
@@ -397,5 +394,16 @@ class OperationResponse
         }
         $args = array_merge([$name], $additionalArgs);
         return call_user_func_array([$this->operationsClient, $method], $args);
+    }
+
+    private function hasResult()
+    {
+        if (is_null($this->lastProtoResponse)) {
+            return false;
+        }
+
+        // The call to getResult is only for OnePlatform LROs, and is not
+        // supported by other LRO GAPIC clients (e.g. Compute)
+        return method_exists($this->lastProtoResponse, 'getResponse');
     }
 }
