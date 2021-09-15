@@ -256,6 +256,12 @@ class OperationResponse
      */
     public function getResult()
     {
+        if (!method_exists($this->lastProtoResponse, 'getResponse')) {
+            // The call to getResult is only for OnePlatform LROs, and is not
+            // supported by other LRO GAPIC clients (e.g. Compute)
+            return null;
+        }
+
         if (!$this->isDone() || is_null($this->lastProtoResponse->getResponse())) {
             return null;
         }
@@ -360,6 +366,12 @@ class OperationResponse
      */
     public function getMetadata()
     {
+        if (!method_exists($this->lastProtoResponse, 'getMetadata')) {
+            // The call to getMetadata is only for OnePlatform LROs, and is not
+            // supported by other LRO GAPIC clients (e.g. Compute)
+            return null;
+        }
+
         if (is_null($this->lastProtoResponse)) {
             return null;
         }
