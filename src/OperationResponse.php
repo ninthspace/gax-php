@@ -154,7 +154,7 @@ class OperationResponse
      */
     public function isDone()
     {
-        if (is_null($this->lastProtoResponse)) {
+        if (!$this->hasProtoResponse()) {
             return false;
         }
 
@@ -174,9 +174,16 @@ class OperationResponse
      */
     public function operationSucceeded()
     {
-        if (!$this->hasResult()) {
-            return $this->isDone() && is_null($this->getError());
+        if (!$this->hasProtoResponse()) {
+            return false;
         }
+
+        if (!$this->canHaveResult()) {
+            // For Operations which do not have a result, we consider a successful
+            // operation when the operation has completed without errors.
+            return $this->isDone() && !$this->hasErrors();
+        }
+
         return !is_null($this->getResult());
     }
 
@@ -188,7 +195,7 @@ class OperationResponse
      */
     public function operationFailed()
     {
-        return !is_null($this->getError());
+        return $this->hasErrors();
     }
 
     /**
@@ -259,12 +266,23 @@ class OperationResponse
      */
     public function getResult()
     {
-        if (!$this->hasResult() || !$this->isDone() || is_null($this->lastProtoResponse->getResponse())) {
+        if (!$this->hasProtoResponse()) {
+            return null;
+        }
+
+        if (!$this->canHaveResult()) {
+            return null;
+        }
+
+        if (!$this->isDone()) {
             return null;
         }
 
         /** @var Any $anyResponse */
         $anyResponse = $this->lastProtoResponse->getResponse();
+        if (is_null($anyResponse)) {
+            return null;
+        }
         if (is_null($this->operationReturnType)) {
             return $anyResponse;
         }
@@ -363,15 +381,16 @@ class OperationResponse
      */
     public function getMetadata()
     {
+        if (!$this->hasProtoResponse()) {
+            return null;
+        }
+
         if (!method_exists($this->lastProtoResponse, 'getMetadata')) {
             // The call to getMetadata is only for OnePlatform LROs, and is not
             // supported by other LRO GAPIC clients (e.g. Compute)
             return null;
         }
 
-        if (is_null($this->lastProtoResponse)) {
-            return null;
-        }
         /** @var Any $any */
         $any = $this->lastProtoResponse->getMetadata();
         if (is_null($this->metadataReturnType)) {
@@ -396,14 +415,20 @@ class OperationResponse
         return call_user_func_array([$this->operationsClient, $method], $args);
     }
 
-    private function hasResult()
+    private function canHaveResult()
     {
-        if (is_null($this->lastProtoResponse)) {
-            return false;
-        }
-
         // The call to getResult is only for OnePlatform LROs, and is not
         // supported by other LRO GAPIC clients (e.g. Compute)
         return method_exists($this->lastProtoResponse, 'getResponse');
+    }
+
+    private function hasErrors()
+    {
+        return !is_null($this->getError());
+    }
+
+    private function hasProtoResponse()
+    {
+        return !is_null($this->lastProtoResponse);
     }
 }
